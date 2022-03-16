@@ -1,13 +1,10 @@
 import streamlit as st
 import pandas as pd
-import seaborn as sns
 import csv
 import base64
 import pandas as pd
 from prettytable import PrettyTable
 import numpy as np
-
-from google.colab import files
 from scapy.all import *
 import matplotlib.pyplot as plt
 from collections import Counter
