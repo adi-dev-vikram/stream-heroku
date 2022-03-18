@@ -68,8 +68,8 @@ def read_pcap(packets_list):
     for line in dns_ip_list:
         file.write(line)
         file.write('\n')
-  data = pd.read_csv("shows.csv") #path folder of the data file
-  st.markdown("### Src IP and ttl details###")
+  data = pd.read_csv("shows_details.csv") #path folder of the data file
+  st.markdown("### Src IP and ttl Details###")
   st.write(data)
   textfiledownload(" ".join(dns_ip_list))
 
