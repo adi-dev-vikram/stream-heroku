@@ -1,3 +1,4 @@
+%%writefile app.py
 import streamlit as st
 import pandas as pd
 import csv
@@ -8,43 +9,68 @@ import numpy as np
 from scapy.all import *
 import matplotlib.pyplot as plt
 from collections import Counter
+from scapy.layers.dns import DNS, DNSQR
 
 st.title('PCAP File Analyser')
 
 st.markdown("""
-This app performs simple pcap analysis and provides insights about traffic data along with downloadable reports which saves time !
+This app performs simple pcap analysis and provides insights about traffic data along with downloadable reports which saves time !!
 """)
 
-st.header('Display essentials stats derived from PCAP file')
-#st.write(pcap name)
-#st.dataframe(data)
+st.header('Display essentials statistics derived from PCAP file')
+
+
+def domain_search(result, pcap_file):
+  domain = result
+
+  for packet in pcap_file:
+    if packet.haslayer(DNSQR):
+        query = packet[DNSQR].qname
+        st.write("here")
+        if domain in query:
+          st.write(query + '\n')
+        else:
+          st.write("Domain not found")
 
 
 # Download stats
-def filedownload(csv_file):
-    b64 = base64.b64encode(csv_file.encode()).decode()  # strings <-> bytes conversions
-    href = f'<a href="data:file/csv;base64,{b64}" download="pcapstats.csv">Download CSV File</a>'
+def textfiledownload(raw_text):
+    b64 = base64.b64encode(raw_text.encode()).decode()  # strings <-> bytes conversions
+    new_filename = "dns_ip_report.txt"
+    st.markdown("#### Download File ###")
+    href = f'<a href="data:file/txt;base64,{b64}" download="{new_filename}">Download Report File</a>'
+    st.markdown(href, unsafe_allow_html=True)
     return href
+
 
 PIE_PLOT_DATA = []
 
 def read_pcap(packets_list):
   count_UDP = count_TCP = 0
   
+  dns_ip_list =[]
   for pkt in packets_list:
     if pkt.haslayer(DNSQR):
       query = pkt[DNSQR].qname
-      print(query)
-    if pkt.haslayer(IP):
-      pckt_src=pkt[IP].src
-      pckt_dst=pkt[IP].dst
-      pckt_ttl=pkt[IP].ttl
-      print("IP Packet: {} is going to {} and has ttl value {}".format(pckt_src,pckt_dst,pckt_ttl))
+    i = 0
+    for i in range(0,50):
+      if pkt.haslayer(IP):
+        pckt_src=pkt[IP].src
+        pckt_dst=pkt[IP].dst
+        pckt_ttl=pkt[IP].ttl
+        dns_ip_list += [str("IP Packet: {} is going to {} and has ttl value {}".format(pckt_src,pckt_dst,pckt_ttl))]
     if pkt.haslayer(IP):
       if pkt[IP].proto == 17:
         count_UDP += 1
       if pkt[IP].proto ==6:
         count_TCP += 1
+  #textfiledownload(dns_ip_str)
+  with open('shows.csv','w') as file:
+    for line in dns_ip_list:
+        file.write(line)
+        file.write('\n')
+  data = pd.read_csv("shows.csv") #path folder of the data file
+  st.write(data)
 
   PIE_PLOT_DATA.append(count_UDP)
   PIE_PLOT_DATA.append(count_TCP)
@@ -97,7 +123,6 @@ def process_src_IP(packets):
     if IP in pkt:
       try:
         srcIP.append(pkt[IP].src)
-        #print(srcIP)
       except:
         pass
   
@@ -145,6 +170,7 @@ def process_src_IP(packets):
 def main():
   st.sidebar.title("File Type")
   file_type = st.sidebar.selectbox('To Upload', ['Dataset', 'Packet capture'], key='1')
+  ml_algo_type = st.sidebar.selectbox('Machine Learning Algorithms', ['kNN', 'Random Forest', 'SVM'], key='1')
 
   if file_type == "Dataset":
     st.subheader("Dataset")
@@ -160,15 +186,24 @@ def main():
     pcap_file = st.file_uploader("Upload PCAP",type=None)
     if st.button("Process"):
       if pcap_file is not None:
+        st.markdown("### File Details ###")
         file_details = {"Filename":pcap_file.name,"FileType":pcap_file.type,"FileSize":pcap_file.size}
         st.write(file_details)
+        domain_name = st.text_input("Enter the domain name to search : ")
         packets = rdpcap(pcap_file)
+
+        # if(st.button('Submit')):
+        #     result = domain_name.title()
+        #     st.write(result)
+        #     domain_search(result, packets)
+        #     st.success(result)
+        
         process_src_IP(packets)
         read_pcap(packets)
         
   
   else:
-    print("Incoorect file format")
+    st.write("Incorrect file format")
 
 if __name__=='__main__':
   main()
