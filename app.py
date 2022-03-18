@@ -63,13 +63,15 @@ def read_pcap(packets_list):
         count_UDP += 1
       if pkt[IP].proto ==6:
         count_TCP += 1
-  #textfiledownload(dns_ip_str)
-  with open('shows.csv','w') as file:
+  
+  with open('shows_details.csv','w') as file:
     for line in dns_ip_list:
         file.write(line)
         file.write('\n')
   data = pd.read_csv("shows.csv") #path folder of the data file
+  st.markdown("### Src IP and ttl details###")
   st.write(data)
+  textfiledownload(" ".join(dns_ip_list))
 
   PIE_PLOT_DATA.append(count_UDP)
   PIE_PLOT_DATA.append(count_TCP)
